@@ -1,0 +1,12 @@
+name: "DLP: GitHub Token - Any Direction"
+description: "Detects messages containing GitHub personal access tokens and OAuth tokens."
+type: "rule"
+severity: "high"
+source: |
+  any([body.current_thread.text, subject.subject],
+          // GitHub personal access token: ghp_, gho_, ghu_, ghs_, ghr_ followed by alphanumeric
+          regex.contains(., '\bgh[pousr]_[A-Za-z0-9]{36,}\b')
+  )
+
+detection_methods:
+-   "Content analysis"
