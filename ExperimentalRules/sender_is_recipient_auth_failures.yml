@@ -1,0 +1,20 @@
+name: "Sender is Recipient with Auth Failures"
+description: "Detects emails where the sender and recipient are the same person with SPF or DMARC authentication failures, indicating potential spoofing."
+type: "rule"
+severity: "high"
+source: |
+  type.inbound
+  // direct to recipient
+  and length(recipients.to) == 1
+  // sender is the recipient
+  and all(recipients.to, sender.email.email == .email.email and .email.domain.root_domain in $org_domains)
+  and sender.email.email != "offers@lendio.com"
+  // auth failures
+  and 1 of (
+    not headers.auth_summary.spf.pass,
+    not headers.auth_summary.dmarc.pass
+  )
+
+detection_methods:
+  - "Authentication analysis"
+  - "Sender/recipient comparison"

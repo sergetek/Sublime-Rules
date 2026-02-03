@@ -1,0 +1,47 @@
+name: "Outbound Forward with Sensitive Data/Attachments"
+description: "Enhanced rule detecting forwards containing sensitive indicators including archive files, keyword patterns, and NLU classification tags (invoice, payment, purchase_order)."
+type: "rule"
+severity: "critical"
+source: |
+  type.outbound
+  and regex.imatch(subject.subject, "fw(d):.*")
+  and any(recipients.to,
+          (
+            strings.levenshtein(.email.local_part, sender.email.local_part) <= 2
+            or strings.ilevenshtein(.display_name, sender.display_name) <= 2
+          )
+          and (
+            .email.domain.root_domain in $free_email_providers
+            or .email.domain.root_domain in $disposable_email_providers
+          )
+  )
+
+  and (
+    any(ml.nlu_classifier(body.current_thread.text).tags,
+        .name in ("invoice", "payment", "purchase_order")
+    )
+    or any(attachments,
+           .file_extension in $file_extensions_common_archives
+           or strings.ilike(body.current_thread.text,
+                            "*password*",
+                            "*sensitive*",
+                            "*protected*",
+                            "*confidential*"
+           )
+           or (
+             .file_type == "pdf"
+             and any(file.explode(.),
+                     any(ml.nlu_classifier(.scan.ocr.raw).tags,
+                         .name in ("invoice", "payment", "purchase_order")
+                     )
+             )
+           )
+    )
+  )
+
+detection_methods:
+  - "Subject analysis"
+  - "Name similarity detection"
+  - "Content analysis"
+  - "NLU classification"
+  - "Attachment analysis"

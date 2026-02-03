@@ -1,0 +1,20 @@
+name: "Known Malicious Sender"
+description: "Detects senders that are most commonly malicious and have only been seen as malicious or spam, never benign."
+type: "rule"
+severity: "critical"
+source: |
+  type.inbound
+  // most commonly malicious
+  and profile.by_sender().message_classifications.most_common == "malicious"
+
+  // only ever seen as malicious or spam
+  and not profile.by_sender().any_messages_benign
+  and profile.by_sender().message_classifications.graymail.prevalence == "none"
+  and profile.by_sender().message_classifications.simulation.prevalence == "none"
+
+  // there is enough data to make a decision
+  and profile.by_sender().message_classifications.unclassified.prevalence != "common"
+
+detection_methods:
+  - "Sender reputation analysis"
+  - "Historical classification"

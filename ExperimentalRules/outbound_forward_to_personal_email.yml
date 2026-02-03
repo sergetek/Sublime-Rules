@@ -1,0 +1,25 @@
+name: "Outbound Forward to Personal Email Address"
+description: "Inspects outbound forwarded messages to free or disposable email providers with exact or similar display name/local part matches."
+type: "rule"
+severity: "high"
+source: |
+  type.outbound
+  and regex.imatch(subject.subject, "fw(d):.*")
+  and any(recipients.to,
+          (
+            // if the sender is first.last@company.com, this will match variations like:
+            // - first.last@gmail.com
+            // - firstlast@gmail.com
+            strings.levenshtein(.email.local_part, sender.email.local_part) <= 2
+            or strings.ilevenshtein(.display_name, sender.display_name) <= 2
+          )
+          and (
+            .email.domain.root_domain in $free_email_providers
+            or .email.domain.root_domain in $disposable_email_providers
+          )
+  )
+
+detection_methods:
+  - "Subject analysis"
+  - "Name similarity detection"
+  - "Recipient analysis"

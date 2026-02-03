@@ -1,0 +1,26 @@
+name: "Graymail: Enable Enhanced Graymail Detection"
+description: "Enables graymail detection for single recipients or undisclosed recipients in the $graymail_users list with unsubscribe links from unsolicited senders. No action assigned to this rule."
+type: "rule"
+severity: "low"
+source: |
+  type.inbound
+  and (
+    (
+      length(recipients.to) == 1
+      and (any(recipients.to, .email.email in $graymail_users)
+           or mailbox.email.email in $graymail_users)
+    )
+    or (
+      (
+        length(recipients.to) == 0
+        or all(recipients.to, .display_name == "Undisclosed recipients")
+      )
+      and mailbox.email.email in $graymail_users
+    )
+  )
+  and strings.ilike(body.current_thread.text, '*unsubscribe*')
+  and not profile.by_sender().solicited
+
+detection_methods:
+  - "Content analysis"
+  - "Sender profile analysis"

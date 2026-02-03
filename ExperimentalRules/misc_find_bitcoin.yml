@@ -1,0 +1,14 @@
+name: "Misc: Find Bitcoin References"
+description: "Detects Bitcoin wallet addresses or references in email body text."
+type: "rule"
+severity: "medium"
+source: |
+  type.inbound
+  and
+  regex.icontains(body.current_thread.text,
+                  '(\d\.\d{3,4}.{0,12}BTC|bitcoin)'
+  )
+
+detection_methods:
+  - "Content analysis"
+  - "Pattern matching"

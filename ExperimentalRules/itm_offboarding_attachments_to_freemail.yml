@@ -1,0 +1,17 @@
+name: "ITM: Off-boarding Employees Sending Attachments to Free Email"
+description: "Detects outbound emails from off-boarding employees sending attachments to free email providers. Requires $offboarding_employees list."
+type: "rule"
+severity: "high"
+source: |
+  type.outbound
+  //find emails outbound by senders in the $offboarding_users list
+  and sender.email.email in $offboarding_employees
+  //With any attachment
+  and (length(attachments) > 0)
+  //Sending email to Free Email providers, Gmail, Hotmail, etc..
+  and any(recipients.to, .email.domain.domain in $free_email_providers)
+
+detection_methods:
+  - "User list matching"
+  - "Attachment detection"
+  - "Recipient analysis"

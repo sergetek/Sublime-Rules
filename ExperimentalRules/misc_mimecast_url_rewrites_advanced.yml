@@ -1,0 +1,55 @@
+name: "Misc: Hunt for Mimecast URL Re-Writes (Advanced with Suspicious Indicators)"
+description: "Advanced Mimecast URL rewrite detection with comprehensive sender trust filtering and suspicious indicators like urgent language, new senders, and mismatched URLs."
+type: "rule"
+severity: "medium"
+source: |
+  // Refined rule for Mimecast-rewritten links with comprehensive sender trust filtering
+  type.inbound
+  and any(body.links,
+          strings.contains(.href_url.url, "mimecastprotect.com")
+  )
+
+  // Explicitly exclude specific notification senders
+  and sender.email.email not in ("noreply@email.teams.microsoft.com", "fax@fuze.com")
+
+  // negate highly trusted sender domains unless they fail DMARC authentication
+  and (
+    (
+      sender.email.domain.root_domain in $high_trust_sender_root_domains
+      and (
+        any(distinct(headers.hops, .authentication_results.dmarc is not null),
+            strings.ilike(.authentication_results.dmarc, "*fail")
+        )
+      )
+    )
+    or sender.email.domain.root_domain not in $high_trust_sender_root_domains
+  )
+
+  // Focus on high-risk situations
+  and (
+    // Suspicious language patterns in subject
+    strings.ilike(subject.subject, "*urgent*", "*action*", "*required*", "*immediate*", "*attention*")
+
+    // Suspicious language patterns in body (checking both plain and HTML content)
+    or any([body.plain.raw, body.html.inner_text],
+           strings.ilike(., "*click*", "*login*", "*credential*", "*password*", "*account*")
+    )
+
+    // Or emails from new/unusual senders
+    or profile.by_sender().prevalence in ("new", "outlier", "rare")
+
+    // Or emails with mismatched display names and URLs
+    or any(body.links, .mismatched == true)
+
+    // Or senders with history of malicious/spam messages but no false positives
+    or (
+      profile.by_sender().any_messages_malicious_or_spam
+      and not profile.by_sender().any_messages_benign
+    )
+  )
+
+detection_methods:
+  - "URL analysis"
+  - "Sender trust evaluation"
+  - "Content analysis"
+  - "Pattern matching"

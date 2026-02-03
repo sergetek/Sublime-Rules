@@ -1,0 +1,48 @@
+name: "ITM: Flag Messages for Resigning/Terminated Users"
+description: "Flags internal messages related to employee resignation or termination based on subject and body keywords."
+type: "rule"
+severity: "medium"
+source: |
+  type.internal
+  and
+  (
+    //Likely Subject line keywords from an employee
+    strings.icontains(subject.subject, "resignation")
+    or strings.icontains(subject.subject, "resign")
+    or strings.icontains(subject.subject, "two weeks notice")
+    or strings.icontains(subject.subject, "stepping down")
+    or strings.icontains(subject.subject, "end of employment")
+    or strings.icontains(subject.subject, "moving on")
+    or strings.icontains(subject.subject, "notice of departure")
+    //Likely Subject line keywords from HR/Manager
+    or strings.icontains(subject.subject, "Employee Departure Notification")
+    or strings.icontains(subject.subject, "Exit Procedure")
+    or strings.icontains(subject.subject, "Exit process")
+    or strings.icontains(subject.subject, "offboarding")
+    or strings.icontains(subject.subject, "final payroll details")
+    or strings.icontains(subject.subject, "departure no notice")
+    or strings.icontains(subject.subject, "termination")
+  )
+  or
+  (
+    //Likely Body keywords from an employee
+    strings.icontains(body.current_thread.text, "resignation")
+    or strings.icontains(body.current_thread.text, "resign")
+    or strings.icontains(body.current_thread.text, "two weeks notice")
+    or strings.icontains(body.current_thread.text, "stepping down")
+    or strings.icontains(body.current_thread.text, "end of employment")
+    or strings.icontains(body.current_thread.text, "moving on")
+    or strings.icontains(body.current_thread.text, "notice of departure")
+    //Likely Body keywords from HR/Manager
+    or strings.icontains(body.current_thread.text, "Employee Departure Notification")
+    or strings.icontains(body.current_thread.text, "Exit Procedure")
+    or strings.icontains(body.current_thread.text, "Exit Process")
+    or strings.icontains(body.current_thread.text, "offboarding")
+    or strings.icontains(body.current_thread.text, "final payroll details")
+    or strings.icontains(body.current_thread.text, "departure no notice")
+    or strings.icontains(body.current_thread.text, "termination")
+  )
+
+detection_methods:
+  - "Content analysis"
+  - "Keyword matching"

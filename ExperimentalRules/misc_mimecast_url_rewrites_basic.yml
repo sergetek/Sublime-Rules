@@ -1,0 +1,19 @@
+name: "Misc: Hunt for Mimecast URL Re-Writes (Basic)"
+description: "Detects Mimecast URL rewriting by looking for emailprotection.link domain in links."
+type: "rule"
+severity: "low"
+source: |
+  type.inbound
+  and (
+    // Check for links to emailprotection.link in href URLs
+    any(body.links,
+        strings.icontains(.href_url.domain.subdomain, "url")
+        and strings.icontains(.href_url.domain.root_domain,
+                              "emailprotection.link"
+        )
+    )
+  )
+
+detection_methods:
+  - "URL analysis"
+  - "Link inspection"

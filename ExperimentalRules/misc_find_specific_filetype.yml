@@ -1,0 +1,15 @@
+name: "Misc: Find Specific File Type"
+description: "Example query to find emails with specific file types. This example finds HEIF files with incorrect content type."
+type: "rule"
+severity: "low"
+source: |
+  type.inbound
+  and
+  any(attachments,
+      .file_type == "heif"
+      and .content_type != "image/heic"
+  )
+
+detection_methods:
+  - "File type analysis"
+  - "Content type validation"

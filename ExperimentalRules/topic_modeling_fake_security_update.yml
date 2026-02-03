@@ -1,0 +1,16 @@
+name: "Topic Modeling: Fake Security Update with Brand Impersonation"
+description: "Detects fake security update emails with brand impersonation using logo detection and topic modeling. Example uses UCSB brand."
+type: "rule"
+severity: "high"
+source: |
+  type.inbound
+  and any(ml.logo_detect(beta.message_screenshot()).brands, .name == "UCSB")
+  and any(beta.ml_topic(body.current_thread.text, display_name=sender.display_name, subject=subject.subject).topics,
+          .name == "Security and Authentication"
+          and .confidence == "high"
+  )
+
+detection_methods:
+  - "Logo detection"
+  - "Topic modeling"
+  - "Brand impersonation detection"

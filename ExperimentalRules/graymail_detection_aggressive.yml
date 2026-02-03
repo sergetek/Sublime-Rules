@@ -1,0 +1,36 @@
+name: "Graymail Detection (Most Aggressive)"
+description: "More aggressive graymail detection that also catches high confidence B2B cold outreach in addition to unsubscribe links."
+type: "rule"
+severity: "low"
+source: |
+  type.inbound
+  and (
+    // Single recipient
+    (length(recipients.to) == 1)
+    or (
+      (
+        // Multiple recipients via undisclosed
+        length(recipients.to) == 0
+        or all(recipients.to, .display_name == "Undisclosed recipients")
+      )
+      // Mailbox message landed in is in Graymail Users list
+      and mailbox.email.email in $graymail_users
+    )
+  )
+
+  // Body contains unsubscribe link
+  and (any(recipients.to, .email.email in $graymail_users)
+       or mailbox.email.email in $graymail_users)
+
+  // Look for Unsubscribe link in body
+  and (
+    strings.ilike(body.current_thread.text, '*unsubscribe*')
+    // Or if NLU determines high confidence of cold B2B outreach
+    or any(ml.nlu_classifier(body.current_thread.text).topics,
+           .name == "B2B Cold Outreach"
+           and .confidence == "high")
+  )
+
+detection_methods:
+  - "Content analysis"
+  - "NLU topic classification"
